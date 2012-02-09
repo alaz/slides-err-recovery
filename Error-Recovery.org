@@ -1,0 +1,232 @@
+#+TITLE: Parsers Error Recovery for Practical Use
+#+AUTHOR: Alexander Azarov
+#+EMAIL: azarov@osinka.ru
+#+DESCRIPTION: Slides for Scala.by 8
+#+KEYWORDS: scala, parser, slides, presentation
+#+LANGUAGE: ru
+#+OPTIONS: H:2 toc:nil
+#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+#+STARTUP: beamer
+#+LaTeX_CLASS: beamer
+#+LaTeX_CLASS_OPTIONS: [bigger, russian, notes=hide]
+#+BEAMER_HEADER_EXTRA: \usetheme{Montpellier}\usecolortheme{seagull}\usefonttheme{structurebold}
+#+BEAMER_FRAME_LEVEL: 2
+#+LATEX_HEADER: \usepackage{ucs}
+#+LATEX_HEADER: \usepackage[utf8x]{inputenc}
+#+LATEX_HEADER: \usepackage[T2A]{fontenc}
+#+LATEX_HEADER: \usepackage[russian,english]{babel}
+#+LATEX_HEADER: \usepackage{color}
+#+LATEX_HEADER: \usepackage{listings}
+#+LATEX_HEADER: \lstdefinelanguage{scala}{morekeywords={class,object,trait,extends,with,new,if,while,for,def,val,var,this},otherkeywords={->,=>},sensitive=true,morecomment=[l]{//},morecomment=[s]{/*}{*/},morestring=[b]"}
+#+LATEX_HEADER: \lstset{frame=tb,language=scala,aboveskip=3mm,belowskip=3mm,showstringspaces=false,columns=flexible,basicstyle={\small\ttfamily}}
+#+LATEX_HEADER: \hypersetup{unicode,colorlinks=false,bookmarks}
+#+LATEX_HEADER: \institute[\lstinline{azarov@osinka.ru / Osinka.ru}]{\lstinline{azarov@osinka.ru / Osinka.ru}}
+#+LATEX_HEADER: \subject{Parsers Error Recovery for Practical Use}
+
+* Meta                                                             :noexport:
+
+Практическая заметка о применении error recovery в Scala parser
+combinators при разборе user generated content.
+
+** TODO Scala code 
+** TODO Beamer blocks
+
+* Context
+
+** Osinka                                                           :B_frame:
+
+*** phpBB forum, > 8M posts
+
+  - User generated content: BBCode markup
+
+*** Slowly migrating to Scala
+
+  - Backend right now
+
+*** note                                                           :B_noteNH:
+
+Осинка это сайт посвященный шитью, вязанию, рукоделиям и прочим
+женским увлечениям. Частью сайта является форум, один из крупнейших в
+Рунете по данной тематике -- около 1.5 млн уникальных посетителей в
+месяц. Язык разметки форума BBCode (достаточно распространенный). Мы
+сейчас храним более 8 млн сообщений.
+
+Некоторое время назад мы начали миграцию на Scala. И в первую очередь
+начали переписывать backend.
+
+** Why parser combinators                                           :B_frame:
+
+*** One post source, many views
+
+  - HTML render for Web
+  - textual view for emails
+  - text-only short summary sometimes
+  - text-only for full-text search indexer
+
+*** Ability to retrieve information from posts
+
+  - links (e.g. spam automated analysis)
+  - images
+
+*** note                                                           :B_noteNH:
+
+Зачем нам нужны parser combinators? Во-первых, раз backend на Scala,
+то разнообразные офлайн-задачи (как-то посылка уведомлений) имеет
+смысл делать именно на backend. Расширяя круг задач становится видно,
+что очень удобно иметь одно синтаксическое дерево распарсенного
+сообщения, чтобы с ним можно было делать разнообразные операции:
+
+ - создавать HTML отображение
+ - создавать текстовое отображение адаптированное для посылки email
+   уведомлений
+ - создавать текстовое короткое уведомление, которое иногда тоже
+   используется
+ - создавать текстовое представление, из которого вырезано все
+   несущественное, это представление удобно отдать индексатору
+   полнотекстового поиска
+
+Мы также хотим иметь возможность вытаскивать разнообразную информацию
+из сообщений и для этого AST также подходит идеально
+
+** Universal AST                                                    :B_frame:
+
+*** One AST and
+
+**** different printers
+
+**** various traversal algorithms
+
+*** note                                                           :B_noteNH:
+
+Таким образом, как результат выполнения parser combinators мы получаем
+универсальное дерево AST, которое "скармливаем" разным printers и
+traversal algorithms.
+
+* Problem Definition
+
+** User-Generated Content: Problem                                  :B_frame:
+
+*** Erroneous markup
+
+**** People do mistakes,
+**** But no one wants to see empty post,
+**** We have to show something meaningful in any case
+
+*** note                                                           :B_noteNH:
+
+Но User Generated Content обладает недостатками -- люди совершают
+ошибки. Которые иногда кажутся удивительными, но надо понимать, что
+квалификация пользователей форума бывает разная и некоторые даже не
+понимают значения "закорючек" BBCode.
+
+Тем не менее, наша задача хоть что-то показать в случае ошибок в
+BBCode, желательно что-то осмысленное.
+
+** Black or White World                                             :B_frame:
+
+*** Scala parser result: =Success= =|= =NoSuccess=
+
+*** note                                                           :B_noteNH:
+
+Возникает проблема. Традиционно Scala parser combinators возвращают
+"черно-белый" результат: все или ничего. Либо разбор удался (что
+означает, текст синтаксически верен), либо не удался (неверен).
+
+* Error recovery
+
+** Parser error recovery                                            :B_frame:
+
+*** Parser does not break
+
+*** It generates "error nodes" instead
+
+  - for highlighting in editor
+  - to mark posts having failures in markup (for moderators/other users to see this)
+
+*** note                                                           :B_noteNH:
+
+Error recovery позволяет специальным образом обрабатывать неверный
+синтаксис вплоть до того момента, когда parser сможет работать
+дальше. Parser не "ломается", вместо этого он генерирует особые узлы
+AST, обозначающие ошибки.
+
+Такие узлы можно использовать для подсветки неверного ввода в
+редакторе или для того, чтобы отмечать сообщения с неверным BBCode на
+форуме (чтобы модераторы и пользователи видели)
+
+** "Catch-all" Parser                                               :B_frame:
+
+*** Native Scala parsers library
+
+*** We use "catch-all" parser
+
+**** A "catch-all" parser is always the last
+
+**** It always returns a "success" ParseResult along with possible causes of the failure
+
+*** note                                                           :B_noteNH:
+    :PROPERTIES:
+    :BEAMER_env: noteNH
+    :END:
+
+Catch-all parser всегда последний в списке. Если все варианты не
+удались, то catch-all parser съедает входной поток до того момента,
+когда можно будет продолжить разбор дальше.
+
+Он всегда возвращает успешный результат с кратким описанием причины
+ошибки. Причина неточна и бывает даже не совсем верна, но это не столь
+важно, если мы можем подсветить ошибочный код.
+
+** A slide with source code                                         :B_frame:
+
+Some source code
+
+*** Example                                                         :B_block:
+    :PROPERTIES:
+    :BEAMER_env: block
+    :END:
+#+NAME: example.scala
+#+BEGIN_LaTeX
+\lstinputlisting[firstline=13,lastline=27]{parserSpec.scala}
+#+END_LaTeX
+
+** Another slide                                                    :B_frame:
+   :PROPERTIES:
+   :BEAMER_env: frame
+   :END:
+
+#+NAME: another.scala
+#+BEGIN_LaTeX
+\begin{lstlisting}[language=scala]
+object SomeFile extends MyTrait {
+  val code = "string".r
+
+  def method(arg: Int): String = {
+    code+arg
+  }
+}
+\end{lstlisting}
+#+END_LaTeX
+
+* Results
+
+** Performance                                                      :B_frame:
+   :PROPERTIES:
+   :BEAMER_env: frame
+   :END:
+
+*** The biggest problem is performance.
+
+Scala parser combinators are very slow compared to the original *phpBB* BBCode parsing via regexp.
+ 
+*** Benchmarks                                                      :B_block:
+    :PROPERTIES:
+    :BEAMER_env: block
+    :END:
+
+|   |   |   |
+|   | Scala | PHP |
+| Typical 8k | 51ms | 5.3ms |
+| Big w/err 76k | 1245ms | 136ms |
+
+*** Caching to the rescue!
