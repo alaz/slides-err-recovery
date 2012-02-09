@@ -8,7 +8,7 @@
 #+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
 #+STARTUP: beamer
 #+LaTeX_CLASS: beamer
-#+LaTeX_CLASS_OPTIONS: [bigger, russian, notes=hide]
+#+LaTeX_CLASS_OPTIONS: [presentation, russian, notes=hide]
 #+BEAMER_HEADER_EXTRA: \usetheme{Montpellier}\usecolortheme{seagull}\usefonttheme{structurebold}
 #+BEAMER_FRAME_LEVEL: 2
 #+LATEX_HEADER: \usepackage{ucs}
@@ -17,8 +17,8 @@
 #+LATEX_HEADER: \usepackage[russian,english]{babel}
 #+LATEX_HEADER: \usepackage{color}
 #+LATEX_HEADER: \usepackage{listings}
-#+LATEX_HEADER: \lstdefinelanguage{scala}{morekeywords={class,object,trait,extends,with,new,if,while,for,def,val,var,this},otherkeywords={->,=>},sensitive=true,morecomment=[l]{//},morecomment=[s]{/*}{*/},morestring=[b]"}
-#+LATEX_HEADER: \lstset{frame=tb,language=scala,aboveskip=3mm,belowskip=3mm,showstringspaces=false,columns=flexible,basicstyle={\small\ttfamily}}
+#+LATEX_HEADER: \lstdefinelanguage{scala}{morekeywords={class,case,object,trait,extends,with,lazy,new,override,if,while,for,def,val,var,this},otherkeywords={->,=>},sensitive=true,morecomment=[l]{//},morecomment=[s]{/*}{*/},morestring=[b]"}
+#+LATEX_HEADER: \lstset{language=scala,columns=spaceflexible,basicstyle=\small,keywordstyle=\bfseries\ttfamily\color[rgb]{0,0,1},stringstyle=\ttfamily\color[rgb]{0.9,0.4,0},showstringspaces=false,tabsize=2}
 #+LATEX_HEADER: \hypersetup{unicode,colorlinks=false,bookmarks}
 #+LATEX_HEADER: \institute[\lstinline{azarov@osinka.ru / Osinka.ru}]{\lstinline{azarov@osinka.ru / Osinka.ru}}
 #+LATEX_HEADER: \subject{Parsers Error Recovery for Practical Use}
@@ -56,17 +56,26 @@ combinators при разборе user generated content.
 
 ** Why parser combinators                                           :B_frame:
 
-*** One post source, many views
+*** One post source, many views                                     :B_block:
+    :PROPERTIES:
+    :BEAMER_envargs: <1->
+    :BEAMER_env: block
+    :END:
 
   - HTML render for Web
   - textual view for emails
   - text-only short summary sometimes
   - text-only for full-text search indexer
 
-*** Ability to retrieve information from posts
+*** Ability to retrieve information from posts                      :B_block:
+    :PROPERTIES:
+    :BEAMER_envargs: <2->
+    :BEAMER_env: block
+    :END:
 
   - links (e.g. spam automated analysis)
   - images
+  - whatever structure analysis we'd want
 
 *** note                                                           :B_noteNH:
 
@@ -90,7 +99,10 @@ combinators при разборе user generated content.
 
 ** Universal AST                                                    :B_frame:
 
-*** One AST and
+*** One AST                                                         :B_block:
+    :PROPERTIES:
+    :BEAMER_env: block
+    :END:
 
 **** different printers
 
@@ -101,6 +113,27 @@ combinators при разборе user generated content.
 Таким образом, как результат выполнения parser combinators мы получаем
 универсальное дерево AST, которое "скармливаем" разным printers и
 traversal algorithms.
+
+** Success?                                                         :B_frame:
+   :PROPERTIES:
+   :BEAMER_env: frame
+   :END:
+
+*** Is this a success?                                              :B_block:
+    :PROPERTIES:
+    :BEAMER_env: block
+    :BEAMER_envargs: <1->
+    :END:
+
+This all looks like a perfect world. But what's the catch??
+
+*** Humans.                                                         :B_block:
+    :PROPERTIES:
+    :BEAMER_env: block
+    :BEAMER_envargs: <2->
+    :END:
+
+They always do mistakes.
 
 * Problem Definition
 
@@ -187,7 +220,7 @@ Some source code
     :END:
 #+NAME: example.scala
 #+BEGIN_LaTeX
-\lstinputlisting[firstline=13,lastline=27]{parserSpec.scala}
+\lstinputlisting[firstline=13,lastline=27,emptylines=0]{parserSpec.scala}
 #+END_LaTeX
 
 ** Another slide                                                    :B_frame:
@@ -224,9 +257,10 @@ Scala parser combinators are very slow compared to the original *phpBB* BBCode p
     :BEAMER_env: block
     :END:
 
-|   |   |   |
-|   | Scala | PHP |
-| Typical 8k | 51ms | 5.3ms |
+|               | Scala  | PHP   |
+|---------------+--------+-------|
+| /             | <      | >     |
+| Typical 8k    | 51ms   | 5.3ms |
 | Big w/err 76k | 1245ms | 136ms |
 
 *** Caching to the rescue!
