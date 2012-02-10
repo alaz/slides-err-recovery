@@ -13,7 +13,7 @@ object RecoveringParser extends RegexParsers {
   val fontOpen = """\[font(=([a-z]+))?\]""".r
   val fontClose = """\[/font\]""".r
 
-  protected def recover[T <: Node](p: => Parser[T]) =
+  protected def recover(p: => Parser[Node]): Parser[Node] =
     Parser { in =>
       val r = p(in)
       lazy val markup = in.source.subSequence(in.offset, r.next.offset).toString
@@ -58,4 +58,29 @@ object RecoveringParser extends RegexParsers {
     }
 }
 
-class recoverySpec extends CommonSpecs(RecoveringParser)
+class recoverySpec extends CommonSpecs(RecoveringParser) {
+  import parser.parse
+
+  describe("recovery") {
+    it("reports incorrect arg") {
+      parse("[font=b]t[/font]") must equal(Right(
+        FailNode("arg incorrect", "[font=b]t[/font]") :: Nil
+      ))
+    }
+    it("recovers extra ending tag") {
+      parse("t[/font]") must equal(Right(
+        Text("t") :: FailNode("missing open", "[/font]") :: Nil
+      ))
+    }
+    it("recovers extra starting tag") {
+      parse("[font]t") must equal(Right(
+        FailNode("missing close", "[font]") :: Text("t") :: Nil
+      ))
+    }
+    it("recovers extra starting tag in a longer sequence") {
+      parse("[font][font]t[/font]") must equal(Right(
+        FailNode("missing close", "[font]") :: Font(None, Text("t") :: Nil) :: Nil
+      ))
+    }
+  }
+}

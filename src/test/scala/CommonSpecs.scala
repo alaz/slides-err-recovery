@@ -31,27 +31,4 @@ abstract class CommonSpecs(val parser: { def parse(in:String): Either[String,Lis
       ))
     }
   }
-
-  describe("recovery") {
-    it("reports incorrect arg") {
-      parse("[font=b]t[/font]") must equal(Right(
-        FailNode("arg incorrect", "[font=b]t[/font]") :: Nil
-      ))
-    }
-    it("recovers extra ending tag") {
-      parse("t[/font]") must equal(Right(
-        Text("t") :: FailNode("missing open", "[/font]") :: Nil
-      ))
-    }
-    it("recovers extra starting tag") {
-      parse("[font]t") must equal(Right(
-        FailNode("missing close", "[font]") :: Text("t") :: Nil
-      ))
-    }
-    it("recovers extra starting tag in a longer sequence") {
-      parse("[font][font]t[/font]") must equal(Right(
-        FailNode("missing close", "[font]") :: Font(None, Text("t") :: Nil) :: Nil
-      ))
-    }
-  }
 }
