@@ -35,7 +35,9 @@ combinators при разборе user generated content.
 
 ** Osinka                                                           :B_frame:
 
-*** phpBB forum, > 8M posts
+*** phpBB forum
+**** showing 2.5M+ pages/day
+**** storing 8M+ posts total
 
   - User generated content: BBCode markup
 
