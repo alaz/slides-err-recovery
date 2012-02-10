@@ -11,7 +11,6 @@
 #+LaTeX_CLASS_OPTIONS: [presentation, russian, notes=hide]
 #+BEAMER_HEADER_EXTRA: \usetheme{Montpellier}\usecolortheme{seagull}\usefonttheme{structurebold}
 #+BEAMER_FRAME_LEVEL: 2
-#+LATEX_HEADER: \usepackage{ucs}
 #+LATEX_HEADER: \usepackage[utf8x]{inputenc}
 #+LATEX_HEADER: \usepackage[T2A]{fontenc}
 #+LATEX_HEADER: \usepackage[russian,english]{babel}
@@ -28,8 +27,8 @@
 Практическая заметка о применении error recovery в Scala parser
 combinators при разборе user generated content.
 
-** TODO Scala code 
-** TODO Beamer blocks
+** DONE Scala code 
+** DONE Beamer blocks
 
 * Context
 
@@ -114,46 +113,86 @@ combinators при разборе user generated content.
 универсальное дерево AST, которое "скармливаем" разным printers и
 traversal algorithms.
 
-** Success?                                                         :B_frame:
+* Problem
+
+** Sounds great. But.                                               :B_frame:
    :PROPERTIES:
    :BEAMER_env: frame
    :END:
 
-*** Is this a success?                                              :B_block:
+This all looks like a perfect world. But what's the catch??
+
+*** note                                                           :B_noteNH:
     :PROPERTIES:
-    :BEAMER_env: block
-    :BEAMER_envargs: <1->
+    :BEAMER_env: noteNH
     :END:
 
-This all looks like a perfect world. But what's the catch??
+Казалось бы все выглядит замечательно. Но где-то должна быть засада.
+
+** Sounds great. But.                                               :B_frame:
+   :PROPERTIES:
+   :BEAMER_env: frame
+   :END:
 
 *** Humans.                                                         :B_block:
     :PROPERTIES:
     :BEAMER_env: block
-    :BEAMER_envargs: <2->
+    :BEAMER_envargs: C[t]
+    :BEAMER_col: 0.5
     :END:
 
-They always do mistakes.
-
-* Problem Definition
-
-** User-Generated Content: Problem                                  :B_frame:
-
-*** Erroneous markup
-
-**** People do mistakes,
-**** But no one wants to see empty post,
-**** We have to show something meaningful in any case
+They do mistakes.
 
 *** note                                                           :B_noteNH:
+    :PROPERTIES:
+    :BEAMER_env: noteNH
+    :END:
 
-Но User Generated Content обладает недостатками -- люди совершают
-ошибки. Которые иногда кажутся удивительными, но надо понимать, что
+User Generated Content обладает недостатками -- люди совершают ошибки.
+
+*** Example                                                         :B_block:
+    :PROPERTIES:
+    :BEAMER_env: block
+    :BEAMER_envargs: <2->
+    :BEAMER_col: 0.5
+    :END:
+
+#+NAME: errmarkup.bbcode
+#+BEGIN_LaTeX
+\begin{lstlisting}[language=]
+[quote]
+[url=http://www.google.com]
+[img]http://www.image.com
+[/url[/img]
+[/b]
+\end{lstlisting}
+#+END_LaTeX
+
+*** note                                                           :B_noteNH:
+    :PROPERTIES:
+    :BEAMER_env: noteNH
+    :END:
+
+Которые иногда кажутся удивительными, но надо понимать, что
 квалификация пользователей форума бывает разная и некоторые даже не
 понимают значения "закорючек" BBCode.
 
-Тем не менее, наша задача хоть что-то показать в случае ошибок в
-BBCode, желательно что-то осмысленное.
+** User-Generated Content: Problem                                  :B_frame:
+
+*** Erroneous markup                                                :B_block:
+    :PROPERTIES:
+    :BEAMER_env: block
+    :END:
+
+ - People do mistakes,
+ - But no one wants to see empty post,
+ - We have to show something meaningful in any case
+
+*** note                                                           :B_noteNH:
+
+Несмотря на то, что люди совершают ошибки в разметке, наша задача
+что-то показать даже если сообщение содержит невалидный
+BBCode. Желательно, чтобы это было что-то осмысленное.
 
 ** Black or White World                                             :B_frame:
 
@@ -163,15 +202,26 @@ BBCode, желательно что-то осмысленное.
 
 Возникает проблема. Традиционно Scala parser combinators возвращают
 "черно-белый" результат: все или ничего. Либо разбор удался (что
-означает, текст синтаксически верен), либо не удался (неверен).
+означает валидность текста относительно заданного parser), либо не
+удался (невалидность).
 
-* Error recovery
+* Solution
 
 ** Parser error recovery                                            :B_frame:
 
-*** Parser does not break
+*** How it works                                                    :B_block:
+    :PROPERTIES:
+    :BEAMER_env: block
+    :END:
 
-*** It generates "error nodes" instead
+**** Parser does not break
+
+**** It generates "error nodes" instead
+
+*** Useful:                                                         :B_block:
+    :PROPERTIES:
+    :BEAMER_env: block
+    :END:
 
   - for highlighting in editor
   - to mark posts having failures in markup (for moderators/other users to see this)
@@ -189,13 +239,18 @@ AST, обозначающие ошибки.
 
 ** "Catch-all" Parser                                               :B_frame:
 
-*** Native Scala parsers library
+*** Approach                                                        :B_block:
+    :PROPERTIES:
+    :BEAMER_env: block
+    :END:
 
-*** We use "catch-all" parser
+**** Native Scala parsers library
 
-**** A "catch-all" parser is always the last
+**** We use "catch-all" parser
 
-**** It always returns a "success" ParseResult along with possible causes of the failure
+  - A "catch-all" parser is always the last
+  - It always returns a "success" =ParseResult= along with possible
+    causes of the failure
 
 *** note                                                           :B_noteNH:
     :PROPERTIES:
@@ -210,17 +265,94 @@ Catch-all parser всегда последний в списке. Если вс�
 ошибки. Причина неточна и бывает даже не совсем верна, но это не столь
 важно, если мы можем подсветить ошибочный код.
 
-** A slide with source code                                         :B_frame:
+* Example
 
-Some source code
+** AST                                                              :B_frame:
+   :PROPERTIES:
+   :BEAMER_env: frame
+   :END:
 
-*** Example                                                         :B_block:
+*** Trivial "one tag" BBCode                                      :B_example:
+    :PROPERTIES:
+    :BEAMER_env: example
+    :END:
+
+#+NAME: example.bbcode
+#+BEGIN_LaTeX
+\begin{lstlisting}[language=]
+Simplest [font=bold]BBCode [font=red]example[/font][/font]
+\end{lstlisting}
+#+END_LaTeX
+
+*** Corresponding AST                                               :B_block:
     :PROPERTIES:
     :BEAMER_env: block
     :END:
-#+NAME: example.scala
+
+#+NAME: parserSpec.scala
 #+BEGIN_LaTeX
-\lstinputlisting[firstline=13,lastline=27,emptylines=0]{parserSpec.scala}
+\lstinputlisting[language=scala,firstline=4,lastline=7,breaklines=true]{src/test/scala/AST.scala}
+#+END_LaTeX
+
+*** note                                                           :B_noteNH:
+    :PROPERTIES:
+    :BEAMER_env: noteNH
+    :END:
+
+Чтобы продемонстрировать, как работает recovery parser, я покажу это
+на примере простейшей разметки BBCode, состоящей из одного тега
+font. Правда, у него может быть alphanumeric агрумент (например, стиль
+шрифта или цвет). Соответствующий AST будет состоять всего из трех
+классов.
+
+** Typical Parser                                                   :B_frame:
+
+*** BBCode parser                                                   :B_block:
+    :PROPERTIES:
+    :BEAMER_env: block
+    :END:
+#+NAME: parserSpec.scala
+#+BEGIN_LaTeX
+\lstinputlisting[language=scala,firstline=11,lastline=22,emptylines=0,breaklines=true]{src/test/scala/parserSpec.scala}
+#+END_LaTeX
+
+*** note                                                           :B_noteNH:
+    :PROPERTIES:
+    :BEAMER_env: noteNH
+    :END:
+
+Parser который разбирает такой BBCode на самом деле чуть длиннее, но
+основная часть приведена на слайде. Тут все достаточно очевидно, мы
+разбираем последовательность узлов текста либо шрифта.
+
+** Testing: passes successful parsing                               :B_frame:
+   :PROPERTIES:
+   :BEAMER_env: frame
+   :END:
+
+*** Scalatest spec                                                  :B_block:
+    :PROPERTIES:
+    :BEAMER_env: block
+    :END:
+
+#+NAME: CommonSpec.scala
+#+BEGIN_LaTeX
+\lstinputlisting[language=scala,firstline=9,lastline=19,emptylines=0,breaklines=true]{src/test/scala/CommonSpecs.scala}
+#+END_LaTeX
+
+** Testing: fails on markup errors                                  :B_frame:
+   :PROPERTIES:
+   :BEAMER_env: frame
+   :END:
+
+*** Scalatest spec                                                  :B_block:
+    :PROPERTIES:
+    :BEAMER_env: block
+    :END:
+
+#+NAME: CommonSpec.scala
+#+BEGIN_LaTeX
+\lstinputlisting[firstline=35,lastline=44,emptylines=0,breaklines=true]{src/test/scala/CommonSpecs.scala}
 #+END_LaTeX
 
 ** Another slide                                                    :B_frame:
@@ -250,7 +382,8 @@ object SomeFile extends MyTrait {
 
 *** The biggest problem is performance.
 
-Scala parser combinators are very slow compared to the original *phpBB* BBCode parsing via regexp.
+Scala parser combinators are very slow compared to the original
+*phpBB* BBCode parsing via regexp.
  
 *** Benchmarks                                                      :B_block:
     :PROPERTIES:
