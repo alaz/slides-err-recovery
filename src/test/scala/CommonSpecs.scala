@@ -14,6 +14,9 @@ abstract class CommonSpecs(val parser: { def parse(in:String): Either[String,Lis
     it("parses text") {
       parse("plain text") must equal(Right(Text("plain text") :: Nil))
     }
+    it("parses bbcode-like text") {
+      parse("plain [tag] [fonttext") must equal(Right(Text("plain [tag] [fonttext") :: Nil))
+    }
     it("parses font w/o arg") {
       parse("[font]text[/font]") must equal(Right(Font(None, Text("text") :: Nil) :: Nil))
     }

@@ -28,4 +28,13 @@ object TrivialParser extends RegexParsers {
     }
 }
 
-class parserSpec extends CommonSpecs(TrivialParser)
+class parserSpec extends CommonSpecs(TrivialParser) {
+  import parser.parse
+
+  describe("error markup") {
+    it("results in error") {
+      parse("t[/font]") must be('left)
+      parse("[font]t") must be('left)
+    }
+  }
+}

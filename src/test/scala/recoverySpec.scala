@@ -82,5 +82,10 @@ class recoverySpec extends CommonSpecs(RecoveringParser) {
         FailNode("missing close", "[font]") :: Font(None, Text("t") :: Nil) :: Nil
       ))
     }
+    it("recovers extra ending tag in a longer sequence") {
+      parse("[font]t[/font][/font]") must equal(Right(
+        Font(None, Text("t") :: Nil) :: FailNode("missing open", "[/font]") :: Nil
+      ))
+    }
   }
 }
