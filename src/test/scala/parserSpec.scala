@@ -12,7 +12,7 @@ object TrivialParser extends RegexParsers {
 
   lazy val text =
     rep1(not(fontOpen|fontClose) ~> "(?s).".r) ^^ {
-      chars => Text(chars.mkString)
+      texts => Text(texts.mkString)
     }
 
   lazy val font: Parser[Node] = {
